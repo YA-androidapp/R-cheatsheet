@@ -4511,6 +4511,17 @@ data <- read.fwf("data.txt") # 固定長
 data <- read.table("data.txt",sep="\t",header=F,quote="\"",dec=".") # read.fwfと同様
 ```
 
+もしも以下のエラー(??は整数)が表示される場合には、文字エンコーディングを指定する必要がある
+
+```
+Error in scan(file, what, nmax, sep, dec, quote, skip, nlines, na.strings,  : 
+  line 1 did not have ?? elements
+```
+
+```r
+data <- read.table("data.csv", fileEncoding="UTF-8", sep=",", header=F)
+```
+
 ### xlsx
 
 ```r
