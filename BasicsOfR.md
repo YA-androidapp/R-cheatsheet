@@ -4719,4 +4719,4 @@ dev.print(file="finename.eps", height=10, horizontal=FALSE, width=10)
 
 ---
 
-Copyright (c) 2014-2016 YA-androidapp(https://github.com/YA-androidapp) All rights reserved.
+Copyright (c) 2016-2017 YA-androidapp(https://github.com/YA-androidapp) All rights reserved.

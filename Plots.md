@@ -639,3 +639,7 @@ rgl.snapshot("plot3dPcScores.png")
 ```
 
 <img src="plot/plot3dPcScores.png" alt="plot" title="plot">
+
+---
+
+Copyright (c) 2016-2017 YA-androidapp(https://github.com/YA-androidapp) All rights reserved.
