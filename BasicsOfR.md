@@ -131,6 +131,30 @@ page( "VariableName" )
 
 ### 整形された文字列を得る
 
+#### formatC関数
+
+```r
+formatC(123, width=5, flag="0")
+formatC(123, width=6, flag="+")
+formatC(123, width=7, flag="-")
+formatC(123, width=8, flag="#")
+
+# 元のデータが文字型の場合、キャストしてからでないとゼロ詰めされない
+formatC(as.integer("123"), width=5, flag="0")
+```
+
+> [1] "00123"
+>
+> [1] "  +123"
+>
+> [1] "123    "
+>
+> [1] "   123.0"
+>
+> [1] "00123"
+
+#### sprintf関数
+
 ```r
 sprintf("%d", 123)
 sprintf("%05d", 123)
@@ -4483,6 +4507,47 @@ cat(getwd())
 curl <- "https://raw.githubusercontent.com/uiuc-cse/data-fa14/gh-pages/data/iris.csv"
 cdestfile <- "iris.csv"
 download.file(curl,cdestfile)
+```
+
+### ファイル一覧を取得
+
+```r
+dirPath <- "/path/to/files/"
+setwd(dirPath)
+list.files()
+```
+
+または
+
+```r
+dirPath <- "/path/to/files/"
+list.files(dirPath)
+```
+
+オプションには以下の値を指定できる
+
+```r
+list.files(
+  path=".",           # 検索対象のフォルダパス
+  pattern=NULL,       # 検索対象のファイル名をフィルタリングする場合の正規表現
+  all.files=FALSE,    # 可視状態のファイル名のみ出力する(隠しファイルを出力しない)かどうか
+  full.names=FALSE,   # ファイル名だけでなくフルパスを出力するかどうか
+  recursive=FALSE,    # サブディレクトリを再帰的に検索するか
+  ignore.case=FALSE,  # 正規表現を指定した時に、大文字小文字の区別をするかどうか
+  include.dirs=FALSE, # 結果にサブフォルダ名も含めるかどうか
+  no..=FALSE          # 現在のフォルダ(.)、親フォルダ(..)も結果に含めるかどうか
+  )
+```
+
+出力される結果はアルファベット順のソートしかできないため、ファイルサイズ等の属性でソートされた結果を取得したい場合にはlist.files関数ではなくOSのコマンドを実行する必要がある
+
+```r
+# Windowsの場合
+files = system('cmd /c dir /B /OD', intern=T) # D:最終更新日時
+files = system('cmd /c dir /B /OE', intern=T) # E:拡張子
+files = system('cmd /c dir /B /OG', intern=T) # G:グループ
+files = system('cmd /c dir /B /ON', intern=T) # N:ファイル名
+files = system('cmd /c dir /B /OS', intern=T) # S:ファイルサイズ
 ```
 
 ### テキストファイル
