@@ -63,12 +63,30 @@ x <- iris[,1:4]
 ### 1.3.クラスタリングとプロット
 
 ```r
-# クラスタリング用関数の用意
+# 最適なkの値を算出
+library(cluster)
+result.gap <- clusGap(x, kmeans, K.max = clsnum * 2, B = 100, verbose = interactive())
+plot(result.gap)
+clsnum <- with(result.gap,maxSE(Tab[,"gap"],Tab[,"SE.sim"]))
 
-km.hw<-kmeans(x, 3, algorithm = "Hartigan-Wong")
-km.ll<-kmeans(x, 3, algorithm = "Lloyd")
-km.fo<-kmeans(x, 3, algorithm = "Forgy")
-km.mq<-kmeans(x, 3, algorithm = "MacQueen")
+ # gap.range <- range(result.gap$Tab[,"gap"])
+ # lines(rep(which.max(result.gap$Tab[,"gap"]),2),gap.range, col="blue", lty=2)
+
+# クラスタリング用関数の用意
+km.hw<-kmeans(x, clsnum, algorithm = "Hartigan-Wong")
+km.ll<-kmeans(x, clsnum, algorithm = "Lloyd")
+km.fo<-kmeans(x, clsnum, algorithm = "Forgy")
+km.mq<-kmeans(x, clsnum, algorithm = "MacQueen")
+
+
+
+# ここから分類結果の確認
+ctitems <- as.list(NULL)
+for(i in 1:nrow(km$centers)){
+    item <- subset(x, cluster == i, 'LABEL')
+    ctitems[[i]] <- item[order(-item[, 'LABEL']), ]
+}
+ # ここまで分類結果の確認
 ```
 
 ```r
@@ -104,7 +122,6 @@ par(op)
 
 ```r
 # 各手法でのクラスタリング
-
 km.hw<-calckmeans(x, 3, meth = "Hartigan-Wong")
 km.ll<-calckmeans(x, 3, meth = "Lloyd")
 km.fo<-calckmeans(x, 3, meth = "Forgy")
@@ -113,7 +130,6 @@ km.mq<-calckmeans(x, 3, meth = "MacQueen")
 
 ```r
 # 評価
-
 ans <- iris[,5]
 evalclust(km.hw$cluster,ans)
 # Entropy:  0.2790808
@@ -133,8 +149,8 @@ evalclust(km.mq$cluster,ans)
 
 ```r
 calchclust <- function(
-  x,              # データセット
-  clsnum,         # クラスタ数
+  x, # データセット
+  clsnum, # クラスタ数
   meth="complete" # メソッド
   ){
   d2 <- dist(x)^2 # ユークリッド平方距離
@@ -145,7 +161,21 @@ calchclust <- function(
          d <- dist(x)             # その他の場合：      ユークリッド距離
   )
   hc <- hclust(d, method = meth) # meth手法でのクラスタリング
-  return(cutree(hc,k=clsnum))    # クラスターを clsnum個に分割し返す
+  ct  <- cutree(hc,k=clsnum) # clsnum個のクラスタに分割
+
+ # ここから分類結果の確認
+ x[, 'cluster'] <- ct
+
+ ctitems <- as.list(NULL)
+ for(i in 1:clsnum){
+  item <- subset(x, cluster == i, 'LABEL') # 第三引数(LABEL)には元データでIDを示すような列名を入れる
+  ctitems[[i]] <- item[order(-item), ]
+ }
+ plot(hc, labels=as.character(x[, 1]))
+ rect.hclust(hc, k=clsnum)
+ # ここまで分類結果の確認
+
+  return(ct) # クラスタ群を返す
 }
 
 x <- iris[,1:4] # 解析データ：iris 1-4列のデータ
