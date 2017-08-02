@@ -1,4 +1,13 @@
-# CRANで公開されているすべてのパッケージをインストール
+# R cheatsheet (パッケージ導入編)
+
+## 目次
+
+1. CRANで公開されているすべてのパッケージをインストール
+2. 主成分分析
+
+---
+
+## 1.CRANで公開されているすべてのパッケージをインストール
 
 ```r
 packs <- available.packages()
@@ -6,13 +15,13 @@ nrow(packs)
 head(packs)
 ```
 
-## オンラインでインストール
+### 1.1.オンラインでインストール
 
 ```r
 sapply(packs[, "Package"], function(p) if(!require(p, character.only=TRUE)){try(install.packages(p))})
 ```
 
-## ネットワークに接続されたPCでダウンロードして、隔離されたPCでインストール
+### 1.2.ネットワークに接続されたPCでダウンロードして、隔離されたPCでインストール
 
 ```r
 # PC1でダウンロード
@@ -32,7 +41,7 @@ for(1:5){
 }
 ```
 
-# Task Viewsを基に、分野ごとにパッケージをインストール
+## 1.3.Task Viewsを基に、分野ごとにパッケージをインストール
 
 ```r
 install.packages("ctv")
@@ -74,3 +83,22 @@ install.views("TimeSeries")
 install.views("WebTechnologies")
 install.views("gR")
 ```
+
+## 2.未インストールのパッケージのみインストール
+
+```r
+pkgTest <- function(x)
+{
+  if (!require(x,character.only = TRUE))
+  {
+    install.packages(x,dep=TRUE)
+    if(!require(x,character.only = TRUE)) stop("Package not found")
+  }
+}
+
+pkgTest("MiscPsycho")
+```
+
+---
+
+Copyright (c) 2017 YA-androidapp(https://github.com/YA-androidapp) All rights reserved.

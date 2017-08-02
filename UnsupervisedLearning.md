@@ -3,6 +3,7 @@
 ## 目次
 
 1. クラスタリング
+2. 主成分分析
 
 ---
 
@@ -232,6 +233,49 @@ evalclust(hcc.cntr,ans) # 重心法
 evalclust(hcc.medi,ans) # メディアン法
 # Entropy:  0.173873
 # Purity :  0.9133333
+```
+
+## 2.主成分分析
+
+### 2.1.主成分得点の算出・可視化
+
+```r
+data(iris)
+x <- iris[1:4]
+ans <- as.factor(iris[,5]) # クラス
+
+# 主成分分析の実施 # center, scaleパラメータは標準化の有無を指定
+result.pca <- prcomp(
+  x,
+  #center = T
+  scale=T
+  )
+
+# 主成分得点の算出
+for(i in 1:ncol(x)) {
+  cat( '第', i, '主成分得点: ', result.pca$x[,i] , '\n\n')
+}
+
+# 主成分分析の評価
+## 各主成分得点の標準偏差
+summary(result.pca)$sdev
+## 寄与率
+summary(result.pca)$importance[2,]
+## 累積寄与率
+summary(result.pca)$importance[3,]
+
+cp <- summary(result.pca)$importance[3,]
+j <- 1 + ncol(x) - length(cp[cp>0.7]) # j番目までの主成分を用いて分析を行うのが妥当(累積寄与率70%)
+
+summary(result.pca)$center
+summary(result.pca)$rotation
+summary(result.pca)$scale
+
+# 結果の可視化
+plot(result.pca$x[,1], result.pca$x[,2], col = ans)
+# text(result.pca$x[,1], result.pca$x[,2],1:nrow(x))
+
+biplot(result.pca)
 ```
 
 ---

@@ -5,6 +5,7 @@
 1. e1071パッケージ
 2. caretパッケージ
 3. randomForestパッケージ
+4. 不均衡データに対する学習
 
 ---
 
@@ -334,6 +335,235 @@ table(predict, test.ansr)
 |   setosa     |     26 |          0 |         0 |
 |   versicolor |      0 |         22 |         4 |
 |   virginica  |      0 |          1 |        22 |
+
+# 4.不均衡データに対する学習
+
+## 4.1.線形判別分析
+
+### 4.1.1.必要なライブラリ等の読み込み
+```r
+# install.packages("MASS")
+# install.packages("DMwR")
+# install.packages("dplyr")
+# install.packages("e1071")
+
+library(caret)
+library(DMwR) # SMOTE
+library(dplyr)
+library(e1071)
+library(kernlab) # spamデータセット
+library(MASS) # 線形判別分析
+
+data(iris)
+data(spam)
+```
+
+### 4.1.2.不均衡データの準備
+
+```r
+# iris
+data.iris <- rbind(iris[1:50,], iris[51:100,], iris[106:111,])
+
+# spam
+data.spam <- rbind(head(spam, 500), tail(spam, 2500))
+table(data.spam[, 58]) # 標本数を確認
+# nonspam    spam
+#    2500     500
+```
+
+### 4.1.3.不均衡データのまま線形判別分析
+
+```r
+#iris
+data.iris.lda <- lda(Species ~ ., data = data.iris, CV = TRUE)
+( tab.iris <- table(data.iris[, 5], data.iris.lda$class) )
+#              setosa versicolor virginica
+#   setosa         50          0         0
+#   versicolor      0         50         0
+#   virginica       0          1         5
+
+# spam
+data.spam.lda <- lda(type ~ ., data = data.spam, CV = TRUE)
+( tab.spam <- table(data.spam[, 58], data.spam.lda$class) )
+#           nonspam spam
+# nonspam    2440   60
+# spam        220  280
+```
+
+### 4.1.4.SMOTEによるオーバーサンプリング
+
+```r
+# iris
+data.iris.smote <- SMOTE(Species ~ ., data = data.iris, perc.over = 500, k = 5, perc.under = 100)
+table(data.iris.smote[, 5])
+
+# spam
+data.spam.smote <- SMOTE(type ~ ., data = data.spam, perc.over = 500, k = 5, perc.under = 100)
+table(data.spam.smote[, 58])
+```
+
+### 4.1.5.オーバーサンプリングしたデータに対する線形判別分析
+
+```r
+# iris
+data.iris.lda <- lda(Species ~ ., data = data.iris.smote, CV = TRUE)
+( tab.iris.smote <- table(data.iris.smote[, 5], data.iris.lda$class) )
+#              setosa versicolor virginica
+# setosa         19          0         0
+# versicolor      0         11         0
+# virginica       0          0        36
+
+# 分類精度の確認
+sum(diag(tab.iris)) / sum(tab.iris)
+# [1] 0.990566
+sum(diag(tab.iris.smote)) / sum(tab.iris.smote)
+# [1] 1
+
+# spam
+data.spam.smote.lda <- lda(type ~ ., data = data.spam.smote, CV = TRUE)
+( tab.spam.smote <- table(data.spam.smote[, 58], data.spam.smote.lda$class) )
+#         nonspam spam
+# nonspam    2348  152
+# spam        192 2808
+
+# 分類精度の確認
+sum(diag(tab.spam)) / sum(tab.spam)
+# [1] 0.9066667
+sum(diag(tab.spam.smote)) / sum(tab.spam.smote)
+# [1] 0.9374545
+```
+
+## 4.2.SVM・ランダムフォレスト
+
+### 4.2.1.データセットの準備・可視化
+
+```r
+data <- iris %>%
+  filter(Species %in% c("versicolor", "virginica")) %>%
+  select(Sepal.Length, Petal.Width, Species) %>%
+  mutate(Species=as.factor(as.character(Species)))
+head(data, 3)
+#   Sepal.Length Petal.Width    Species
+# 1          7.0         1.4 versicolor
+# 2          6.4         1.5 versicolor
+# 3          6.9         1.5 versicolor
+
+train_index <- createDataPartition(data$Species, p=0.7, list=FALSE)
+train_data <- data[train_index,] # 訓練データ
+test_data <- data[-train_index,] # 評価データ
+
+myplot <- function(data) {
+  plot(Sepal.Length ~ Petal.Width, data=data, col=Species, pch=19,
+       xlim=c(1, 2.5), ylim=c(4.5, 8))
+}
+myplot(train_data)
+```
+
+### 4.2.2.分類用関数の準備
+
+```r
+# SVM
+computeSVM <- function(data) {
+  cpsvm.train<-svm(Species~.,data)
+  cpsvm.predict<-predict(cpsvm.train,newdata=test_data[,-3])
+  table(test_data$Species,cpsvm.predict)
+}
+
+computeRF <- function(data) {
+  model <- train(data %>% select(-Species), data$Species,
+                 method="rf", preProcess=c("center", "scale"),
+                 trControl=trainControl(method="oob"), ntree=2000)
+  all_pred <- extractPrediction(list(model),
+                                testX=test_data %>% select(-Species),
+                                testY=test_data$Species)
+  pred <- all_pred %>% filter(dataType == "Test")
+  cm <- confusionMatrix(pred$pred, pred$obs)
+  cm$table
+}
+```
+
+### 4.2.3.不均衡データとする前のデータに対する分類の実施
+
+```r
+computeSVM(train_data)
+#           cpsvm.predict
+#            versicolor virginica
+# versicolor         15         0
+# virginica           2        13
+
+# Random Forest
+computeRF(train_data)
+#           Reference
+#            Prediction   versicolor virginica
+# versicolor         15         3
+# virginica           0        12
+```
+
+### 4.2.4.不均衡データの準備
+
+```r
+# 不均衡データとする
+data_imbalanced <- train_data %>%
+  slice(c(1:35, sample(36:70, size = 6, replace = FALSE)))
+
+myplot(data_imbalanced)
+```
+
+### 4.2.5.不均衡データに対する分類の実施
+
+```r
+computeSVM(data_imbalanced)
+#           cpsvm.predict
+#            versicolor virginica
+# versicolor         15         0
+# virginica           6         9
+computeRF(data_imbalanced)
+#           Reference
+#            Prediction   versicolor virginica
+# versicolor         15         7
+# virginica           0         8
+```
+
+### 4.2.5.不均衡データへのオーバーサンプリングの実施と再判別
+
+```r
+# オーバーサンプリング
+data_smote <- SMOTE(Species ~ ., data = data_imbalanced)
+myplot(data_smote)
+computeRF(data_smote)
+#           Reference
+#            Prediction   versicolor virginica
+# versicolor         15         7
+# virginica           0         8
+data_imbalanced %>% count(Species)
+# # A tibble: 2 × 2
+#      Species     n
+#       <fctr> <int>
+# 1 versicolor    35
+# 2  virginica     6
+data_smote %>% count(Species)
+# # A tibble: 2 × 2
+#      Species     n
+#       <fctr> <int>
+# 1 versicolor    24
+# 2  virginica    18
+```
+
+### 4.2.5.クラスの重みづけ調整と精度評価
+
+```r
+computeSVM2 <- function(data) {
+  wts<-100/table(data$Species)
+  cpsvm.train<-svm(Species~., data, class.weights=wts)
+  cpsvm.predict<-predict(cpsvm.train,newdata=test_data[,-3])
+  table(test_data$Species,cpsvm.predict)
+}
+computeSVM2(train_data)
+#           cpsvm.predict
+#            versicolor virginica
+# versicolor         15         0
+# virginica           3        12
+```
 
 ---
 
