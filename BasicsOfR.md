@@ -506,9 +506,9 @@ difftime(d1, d3, tz="", units="weeks")
 >
 > Time difference of 104.2857 weeks
 
-##### POSIXtクラス
+##### POSIXクラス
 
-日時を表すPOSIXtクラスには
+日時を表すPOSIXクラスには
 
 * POSIXct
 * POSIXlt
@@ -672,6 +672,13 @@ as.difftime()を用いて時間差を表す文字列をdifftime()の戻り値と
 
 > [1] "AAA" "BBB" "CCC"
 
+#### 日付ベクトル
+
+```r
+d <- as.Date(as.character(NULL))  # 日付ベクトルの初期化
+d <- c(d, as.Date("2016-12-01")) # 要素の追加
+```
+
 #### 因子ベクトル
 
 ##### 順序無し因子→名義尺度
@@ -766,6 +773,18 @@ as.numeric(levels(f3)[f3]) | as.numeric(as.character(f3))
 numeric型の要素が格納されたベクトルが返る
 
 > [1] 1.2 1.2 3.4 5.6 5.6 5.6 7.8 9.0
+
+###### factor型からcharacter型へキャスト
+
+```r
+as.character(f3)
+
+levels(f3)[f3]
+```
+
+> [1] "1.2" "1.2" "3.4" "5.6" "5.6" "5.6" "7.8" "9"
+>
+> [1] "1.2" "1.2" "3.4" "5.6" "5.6" "5.6" "7.8" "9"
 
 ##### 水準・複製回数・ラベルを指定して因子ベクトルを生成
 
@@ -2811,6 +2830,30 @@ by(df, df$TYPE, summary)
 >
 > Max.   :4.00   Max.   :78.0
 
+#### 型変換
+
+##### 因子型から文字型に戻す
+
+```r
+type <- c("A","A","B","B","A")
+num <- 1:5
+( df <- data.frame(TYPE=type, NUMBER=num) )
+
+df$type <- as.character(df$type)
+
+# OR
+
+df$type <- levels(df$type)[df$type]
+
+# OR
+
+df <- transform(df, type=levels(type)[type])
+
+# OR
+
+df <- data.frame(TYPE=type, NUMBER=num, stringsAsFactors=F) # read.table系の関数でも同様に指定可能
+```
+
 #### 要素の参照
 
 ##### 列
@@ -3769,6 +3812,8 @@ FunctionName1(1)
 
 > [1] 1
 
+複数の値を戻り値としたい場合はlistへ格納する
+
 ```r
 FunctionName2 <- function(arg1, arg2) {
   return( list(arg1, arg2) )
@@ -4245,6 +4290,12 @@ zen2han("１２３４５ＡＢＣ")
 >
 > [1] "12345ABC"
 
+```r
+# 文字数
+library(stringr)
+str_length(files)
+```
+
 ### 文字コード
 
 ```r
@@ -4284,6 +4335,14 @@ attr(result,"useBytes")
 >
 > [1] TRUE
 
+### 文字列を含むか検査
+
+```r
+grepl("1", files) # needle,heystack
+```
+
+> [1]  TRUE FALSE FALSE  FALSE
+
 ### 完全一致
 
 ```r
@@ -4310,6 +4369,12 @@ charmatch(file,files) # needle,heystack
 
 > [1] NA  1 NA NA
 
+```r
+library(stringr)
+str_extract(files, file) # heystack,needle
+str_extract_all(files, file) # heystack,needle
+```
+
 ### ベクトルの要素同士で部分一致
 
 ```r
@@ -4327,6 +4392,10 @@ str_detect(files,file) # heystack,needle
 > length(file) == length(files)のとき
 >
 > [1]  TRUE  TRUE FALSE  TRUE
+
+```r
+str_which(files,file)
+```
 
 ### ベクトルの要素同士で完全一致
 
@@ -4529,6 +4598,60 @@ cdestfile <- "iris.csv"
 download.file(curl,cdestfile)
 ```
 
+#### 直接データフレームに格納
+
+```r
+curl <- "https://raw.githubusercontent.com/uiuc-cse/data-fa14/gh-pages/data/iris.csv"
+df <- read.csv(curl)
+head(df)
+```
+
+```r
+library("RCurl")
+curl <- "https://raw.githubusercontent.com/uiuc-cse/data-fa14/gh-pages/data/iris.csv"
+url <- getURL(curl)
+dat <- read.csv(text = url, header = TRUE)
+head(dat)
+```
+
+#### RCurlパッケージを使用したファイルダウンロード
+
+```r
+# install.packages("RCurl")
+library(RCurl)
+curl <- "https://raw.githubusercontent.com/uiuc-cse/data-fa14/gh-pages/data/iris.csv"
+x <- getURL(curl)
+# options(RCurlOptions=list(verbose=FALSE, capath=system.file("CurlSSL", "cacert.pem", package="RCurl"), ssl.verifypeer=FALSE)) # SSL証明書を検証しない
+# x <- getURL(URL, ssl.verifypeer=FALSE)
+out <- read.csv(textConnection(x))
+```
+
+#### Webページの表をデータフレームに格納
+
+```r
+# install.packages('XML')
+library(XML)
+library(RCurl)
+
+tableurl <- "https://finance.yahoo.com/quote/DIA/options?ltr=1"
+
+# HTMLソースを取得して表の内容を格納する
+contents <- getURL(tableurl)
+tabs <- readHTMLTable(contents, stringsAsFactors = F)
+
+# マルチバイト文字が含まれる場合
+doc = htmlParse(tableurl, encoding = "UTF-8")
+tabs <- readHTMLTable(doc, stringsAsFactors = F)
+
+table.2017 <- as.data.frame(tabs$`1月2日は休日となります。`)
+```
+
+#### rvest
+
+```r
+
+```
+
 ### ファイル一覧を取得
 
 ```r
@@ -4594,6 +4717,8 @@ data <- read.table("iris.csv",sep=",",header=T,row.names=1) # "1"列目は"Name"
 data <- read.table("iris.csv",sep=",",header=T,row.names=paste("No.",1:100,sep="")) # 文字列ベクトルの要素を行名として使う（ここではpasteで接頭辞を追加）
 data <- read.fwf("data.txt") # 固定長
 data <- read.table("data.txt",sep="\t",header=F,quote="\"",dec=".") # read.fwfと同様
+
+data <- read.table("data.txt", stringsAsFactors=F) # 因子型ではなく文字型として格納されるようにする
 ```
 
 もしも以下のエラー(??は整数)が表示される場合には、文字エンコーディングを指定する必要がある
