@@ -3655,6 +3655,20 @@ for (i in y) cat( i, " " )
 
 > 1  2  3  4  5  6  7  8  9  10
 
+##### 進捗状況を表すプログレスバーを表示
+
+```r
+progressBar.start <- 1
+progressBar.end <- 100
+library(tcltk)
+progressBar <- txtProgressBar(min = progressBar.start, max = progressBar.end, style=1) # バーのみ
+progressBar <- txtProgressBar(min = progressBar.start, max = progressBar.end, style=3) # バーとパーセンテージ
+for (i in 1:100){
+    Sys.sleep(1)
+    setTxtProgressBar(progressBar, i)
+}
+```
+
 #### while
 
 ```r
@@ -3729,6 +3743,12 @@ x
 > [1] "1,2,3,4,5"
 
 > [1] 1 2 3 4 5
+
+### Wait
+
+```r
+Sys.sleep(60) # 秒単位
+```
 
 ## 7.関数の定義
 
@@ -4579,7 +4599,7 @@ data <- read.table("data.txt",sep="\t",header=F,quote="\"",dec=".") # read.fwf�
 もしも以下のエラー(??は整数)が表示される場合には、文字エンコーディングを指定する必要がある
 
 ```
-Error in scan(file, what, nmax, sep, dec, quote, skip, nlines, na.strings,  : 
+Error in scan(file, what, nmax, sep, dec, quote, skip, nlines, na.strings,  :
   line 1 did not have ?? elements
 ```
 
