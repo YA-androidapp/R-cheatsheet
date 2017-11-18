@@ -10,6 +10,8 @@
 ## 1.CRANで公開されているすべてのパッケージをインストール
 
 ```r
+options(repos="http://cran.ism.ac.jp")
+
 packs <- available.packages()
 nrow(packs)
 head(packs)
@@ -18,6 +20,8 @@ head(packs)
 ### 1.1.オンラインでインストール
 
 ```r
+options(repos="http://cran.ism.ac.jp")
+
 sapply(packs[, "Package"], function(p) if(!require(p, character.only=TRUE)){try(install.packages(p))})
 ```
 
